@@ -1,0 +1,24 @@
+cost-efficient-rag/
+├── src/
+│   ├── __init__.py
+│   ├── config.py          # Configuration management
+│   ├── ingestion.py       # Document ingestion pipeline
+│   ├── embeddings.py      # Embedding generation
+│   ├── vector_store.py    # FAISS + SQLite integration
+│   ├── retrieval.py       # Retrieval logic
+│   ├── rag.py             # RAG pipeline with LLM
+│   ├── evaluation.py      # Evaluation harness
+│   └── app.py             # HTTP API endpoint
+├── data/
+│   ├── documents/         # Source documents (PDF, HTML, MD)
+│   └── vectordb/          # Vector storage
+├── evaluations/
+│   ├── results.json
+│   └── metrics.json
+├── tests/
+│   ├── test_ingestion.py
+│   └── test_retrieval.py
+├── requirements.txt
+├── .env.example
+├── README.md
+└── run.py
