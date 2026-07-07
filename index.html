@@ -1,0 +1,1053 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+
+    <title>index</title>
+    <meta name="generator" content="pdftohtml 0.36"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <link rel="stylesheet" type="text/css" href="stylesheet.css"/>
+<link rel="stylesheet" type="text/css" href="page_styles.css"/>
+
+  
+
+
+<link href="calibreHtmlOutBasicCss.css" type="text/css" rel="stylesheet" />
+
+</head>
+<body>
+
+<div class="calibreMeta">
+  <div class="calibreMetaTitle">
+  
+  
+    
+    <h1>
+      <a href="../0ede407de6e2b6455f2d4fcb20d24fc6559f8586805027da1945757cc048a180.html">0ede407de6e2b6455f2d4fcb20d24fc6559f8586805027da1945757cc048a180
+</a>
+    </h1>
+    
+    
+  
+  </div>
+  <div class="calibreMetaAuthor">
+    Unknown
+
+  </div>
+</div>
+
+<div class="calibreMain">
+
+  <div class="calibreEbookContent">
+    
+
+    
+<p class="calibre1"><a id="p1"></a>Cost-Efficient RAG Application <b class="calibre2">COMPLETE IMPLEMENTATION GUIDE</b></p>
+<p class="calibre1"><b class="calibre2">1. PROJECT OVERVIEW</b></p>
+<p class="calibre1">This project implements a cost-efficient Retrieval-Augmented Generation (RAG) application using FAISS (Facebook AI Similarity Search) as the vector store with SQLite for metadata storage. This combination provides a low-cost alternative to fully managed vector databases while maintaining good performance. </p>
+<p class="calibre1">Why FAISS + SQLite? </p>
+<p class="calibre1">FAISS: Industry-standard, highly optimized vector similarity search SQLite: Zero-configuration, embedded database for metadata Cost: No ongoing infrastructure costs (runs on local/cheap VPS) Performance: Excellent for up to 10M vectors Simplicity: Easy to set up and maintain</p>
+<p class="calibre1"><b class="calibre2">2. PROJECT STRUCTURE</b></p>
+<p class="calibre1">text</p>
+<p class="calibre1">cost-efficient-rag/</p>
+<p class="calibre1">├── src/</p>
+<p class="calibre1">│   ├── __init__.py</p>
+<p class="calibre1">│   ├── config.py          # Configuration management</p>
+<p class="calibre1">│   ├── ingestion.py       # Document ingestion pipeline</p>
+<p class="calibre1">│   ├── embeddings.py      # Embedding generation</p>
+<p class="calibre1">│   ├── vector_store.py    # FAISS + SQLite integration</p>
+<p class="calibre1">│   ├── retrieval.py       # Retrieval logic</p>
+<p class="calibre1">│   ├── rag.py             # RAG pipeline with LLM</p>
+<p class="calibre1">│   ├── evaluation.py      # Evaluation harness</p>
+<p class="calibre1">│   └── app.py             # HTTP API endpoint</p>
+<p class="calibre1">├── data/</p>
+<p class="calibre1">│   ├── documents/         # Source documents (PDF, HTML, MD)</p>
+<p class="calibre1">│   └── vectordb/          # Vector storage</p>
+<p class="calibre1">├── evaluations/</p>
+<p class="calibre1">│   ├── results.json</p>
+<p class="calibre1">│   └── metrics.json</p>
+<p class="calibre1">├── tests/</p>
+<p class="calibre1">│   ├── test_ingestion.py</p>
+<p class="calibre1">│   └── test_retrieval.py</p>
+<p class="calibre1">├── requirements.txt</p>
+<p class="calibre1"><a id="p2"></a>├── .env.example</p>
+<p class="calibre1">├── README.md</p>
+<p class="calibre1">└── run.py</p>
+<p class="calibre1"><b class="calibre2">3. IMPLEMENTATION CODE</b></p>
+<p class="calibre1"><b class="calibre2">3.1 Configuration ( src/config.py )</b></p>
+<p class="calibre1">python</p>
+<p class="calibre1">import os</p>
+<p class="calibre1">from dataclasses import dataclass</p>
+<p class="calibre1">from typing import Optional</p>
+<p class="calibre1">from dotenv import load_dotenv</p>
+<p class="calibre1">load_dotenv()</p>
+<p class="calibre1">@dataclass</p>
+<p class="calibre1">class Config:</p>
+<p class="calibre1">"""Configuration for the RAG application""" </p>
+<p class="calibre1"/>
+<p class="calibre1"># Embedding configuration</p>
+<p class="calibre1">EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")</p>
+<p class="calibre1">EMBEDDING_DIM: int = int(os.getenv("EMBEDDING_DIM", "384"))</p>
+<p class="calibre1"/>
+<p class="calibre1"># Chunking configuration</p>
+<p class="calibre1">CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", "512")) CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", "50"))</p>
+<p class="calibre1"/>
+<p class="calibre1"># Retrieval configuration</p>
+<p class="calibre1">TOP_K: int = int(os.getenv("TOP_K", "5"))</p>
+<p class="calibre1"/>
+<p class="calibre1"># Vector store configuration</p>
+<p class="calibre1">VECTOR_DB_PATH: str = os.getenv("VECTOR_DB_PATH", "data/vectordb")</p>
+<p class="calibre1"/>
+<p class="calibre1"># LLM configuration</p>
+<p class="calibre1">LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-3.5-turbo") OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")</p>
+<p class="calibre1"/>
+<p class="calibre1"># Logging</p>
+<p class="calibre1">LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")</p>
+<p class="calibre1"><a id="p3"></a>    </p>
+<p class="calibre1"># Evaluation</p>
+<p class="calibre1">EVALUATION_QUESTIONS_PATH: str = </p>
+<p class="calibre1">os.getenv("EVALUATION_QUESTIONS_PATH", "data/evaluation_questions.json")</p>
+<p class="calibre1"/>
+<p class="calibre1">@classmethod</p>
+<p class="calibre1">def from_env(cls) -&gt; "Config":</p>
+<p class="calibre1">"""Create Config from environment variables""" </p>
+<p class="calibre1">return cls()</p>
+<p class="calibre1"/>
+<p class="calibre1">def validate(self) -&gt; bool:</p>
+<p class="calibre1">"""Validate configuration""" </p>
+<p class="calibre1">if self.OPENAI_API_KEY is None:</p>
+<p class="calibre1">print("Warning: OPENAI_API_KEY not set. LLM features will not work.")</p>
+<p class="calibre1">return False</p>
+<p class="calibre1">return True</p>
+<p class="calibre1">config = Config.from_env()</p>
+<p class="calibre1"><b class="calibre2">3.2 Embeddings ( src/embeddings.py )</b></p>
+<p class="calibre1">python</p>
+<p class="calibre1">import numpy as np</p>
+<p class="calibre1">from sentence_transformers import SentenceTransformer from typing import List, Optional</p>
+<p class="calibre1">import logging</p>
+<p class="calibre1">logger = logging.getLogger(__name__)</p>
+<p class="calibre1">class EmbeddingGenerator:</p>
+<p class="calibre1">"""Generate embeddings for text chunks""" </p>
+<p class="calibre1"/>
+<p class="calibre1">def __init__(self, model_name: str = "all-MiniLM-L6-v2"):</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">Initialize the embedding generator</p>
+<p class="calibre1"/>
+<p class="calibre1">Args:</p>
+<p class="calibre1">model_name: Name of the sentence transformer model</p>
+<p class="calibre1">""" </p>
+<p class="calibre1"><a id="p4"></a>        self.model_name = model_name self.model = None</p>
+<p class="calibre1">self.dimension = 384  # all-MiniLM-L6-v2 dimension def load_model(self):</p>
+<p class="calibre1">"""Lazy load the model""" </p>
+<p class="calibre1">if self.model is None:</p>
+<p class="calibre1">logger.info(f"Loading embedding model: {self.model_name}") self.model = SentenceTransformer(self.model_name) self.dimension = </p>
+<p class="calibre1">self.model.get_sentence_embedding_dimension() logger.info(f"Model loaded. Dimension: {self.dimension}") return self.model</p>
+<p class="calibre1"/>
+<p class="calibre1">def embed(self, texts: List[str]) -&gt; np.ndarray:</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">Generate embeddings for a list of texts</p>
+<p class="calibre1"/>
+<p class="calibre1">Args:</p>
+<p class="calibre1">texts: List of text strings</p>
+<p class="calibre1"/>
+<p class="calibre1">Returns:</p>
+<p class="calibre1">numpy array of embeddings</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">if not texts:</p>
+<p class="calibre1">return np.array([])</p>
+<p class="calibre1"/>
+<p class="calibre1">model = self.load_model()</p>
+<p class="calibre1">embeddings = model.encode(texts, convert_to_numpy=True) return embeddings</p>
+<p class="calibre1"/>
+<p class="calibre1">def embed_single(self, text: str) -&gt; np.ndarray:</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">Generate embedding for a single text</p>
+<p class="calibre1"/>
+<p class="calibre1">Args:</p>
+<p class="calibre1">text: Text string</p>
+<p class="calibre1"/>
+<p class="calibre1">Returns:</p>
+<p class="calibre1">numpy array of embedding</p>
+<p class="calibre1">""" </p>
+<p class="calibre1"><a id="p5"></a>        return self.embed([text])[0]</p>
+<p class="calibre1"/>
+<p class="calibre1">@property</p>
+<p class="calibre1">def embedding_dimension(self) -&gt; int:</p>
+<p class="calibre1">"""Get the embedding dimension""" </p>
+<p class="calibre1">if self.model is None:</p>
+<p class="calibre1">self.load_model()</p>
+<p class="calibre1">return self.dimension</p>
+<p class="calibre1"><b class="calibre2">3.3 Vector Store ( src/vector_store.py )</b> python</p>
+<p class="calibre1">import sqlite3</p>
+<p class="calibre1">import json</p>
+<p class="calibre1">import numpy as np</p>
+<p class="calibre1">import faiss</p>
+<p class="calibre1">from typing import List, Dict, Any, Optional, Tuple from pathlib import Path</p>
+<p class="calibre1">import hashlib</p>
+<p class="calibre1">import logging</p>
+<p class="calibre1">logger = logging.getLogger(__name__)</p>
+<p class="calibre1">class VectorStore:</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">FAISS + SQLite vector store with metadata filtering</p>
+<p class="calibre1">""" </p>
+<p class="calibre1"/>
+<p class="calibre1">def __init__(self, db_path: str = "data/vectordb"):</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">Initialize the vector store</p>
+<p class="calibre1"/>
+<p class="calibre1">Args:</p>
+<p class="calibre1">db_path: Path to the vector database directory</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">self.db_path = Path(db_path)</p>
+<p class="calibre1">self.db_path.mkdir(parents=True, exist_ok=True) self.faiss_index_path = self.db_path / "index.faiss" </p>
+<p class="calibre1">self.sqlite_path = self.db_path / "metadata.db" </p>
+<p class="calibre1"><a id="p6"></a>        </p>
+<p class="calibre1">self.index: Optional[faiss.Index] = None</p>
+<p class="calibre1">self.dimension = 384</p>
+<p class="calibre1">self._init_sqlite()</p>
+<p class="calibre1"/>
+<p class="calibre1">def _init_sqlite(self):</p>
+<p class="calibre1">"""Initialize SQLite database for metadata""" </p>
+<p class="calibre1">conn = sqlite3.connect(str(self.sqlite_path)) cursor = conn.cursor()</p>
+<p class="calibre1"/>
+<p class="calibre1">cursor.execute(""" </p>
+<p class="calibre1">CREATE TABLE IF NOT EXISTS chunks (</p>
+<p class="calibre1">id TEXT PRIMARY KEY, </p>
+<p class="calibre1">text TEXT NOT NULL, </p>
+<p class="calibre1">metadata TEXT NOT NULL, </p>
+<p class="calibre1">embedding_id INTEGER UNIQUE, </p>
+<p class="calibre1">doc_id TEXT, </p>
+<p class="calibre1">created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</p>
+<p class="calibre1">)</p>
+<p class="calibre1">""")</p>
+<p class="calibre1"/>
+<p class="calibre1">cursor.execute(""" </p>
+<p class="calibre1">CREATE INDEX IF NOT EXISTS idx_doc_id ON chunks(doc_id)</p>
+<p class="calibre1">""")</p>
+<p class="calibre1"/>
+<p class="calibre1">cursor.execute(""" </p>
+<p class="calibre1">CREATE INDEX IF NOT EXISTS idx_embedding_id ON </p>
+<p class="calibre1">chunks(embedding_id)</p>
+<p class="calibre1">""")</p>
+<p class="calibre1"/>
+<p class="calibre1">conn.commit()</p>
+<p class="calibre1">conn.close()</p>
+<p class="calibre1"/>
+<p class="calibre1">def _get_connection(self):</p>
+<p class="calibre1">"""Get SQLite connection""" </p>
+<p class="calibre1">return sqlite3.connect(str(self.sqlite_path)) def _get_faiss_index(self) -&gt; faiss.Index:</p>
+<p class="calibre1">"""Get or create FAISS index""" </p>
+<p class="calibre1">if self.index is None:</p>
+<p class="calibre1">if self.faiss_index_path.exists():</p>
+<p class="calibre1"><a id="p7"></a>                logger.info(f"Loading FAISS index from </p>
+<p class="calibre1">{self.faiss_index_path}")</p>
+<p class="calibre1">self.index = </p>
+<p class="calibre1">faiss.read_index(str(self.faiss_index_path)) self.dimension = self.index.d</p>
+<p class="calibre1">else:</p>
+<p class="calibre1">logger.info("Creating new FAISS index") self.index = faiss.IndexFlatL2(self.dimension) return self.index</p>
+<p class="calibre1"/>
+<p class="calibre1">def _save_faiss_index(self):</p>
+<p class="calibre1">"""Save FAISS index to disk""" </p>
+<p class="calibre1">if self.index is not None:</p>
+<p class="calibre1">logger.info(f"Saving FAISS index to </p>
+<p class="calibre1">{self.faiss_index_path}")</p>
+<p class="calibre1">faiss.write_index(self.index, str(self.faiss_index_path)) def _generate_chunk_id(self, text: str, metadata: Dict[str, Any]) -&gt; str:</p>
+<p class="calibre1">"""Generate unique ID for a chunk""" </p>
+<p class="calibre1">content = text + json.dumps(metadata, sort_keys=True) return hashlib.sha256(content.encode()).hexdigest()[:16]</p>
+<p class="calibre1"/>
+<p class="calibre1">def add_chunks(</p>
+<p class="calibre1">self, </p>
+<p class="calibre1">chunks: List[str], </p>
+<p class="calibre1">embeddings: np.ndarray, </p>
+<p class="calibre1">metadata_list: List[Dict[str, Any]], </p>
+<p class="calibre1">doc_id: Optional[str] = None</p>
+<p class="calibre1">) -&gt; List[str]:</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">Add chunks to the vector store</p>
+<p class="calibre1"/>
+<p class="calibre1">Args:</p>
+<p class="calibre1">chunks: List of text chunks</p>
+<p class="calibre1">embeddings: numpy array of embeddings</p>
+<p class="calibre1">metadata_list: List of metadata dictionaries doc_id: Document ID for grouping</p>
+<p class="calibre1"/>
+<p class="calibre1">Returns:</p>
+<p class="calibre1">List of chunk IDs</p>
+<p class="calibre1"><a id="p8"></a>        """ </p>
+<p class="calibre1">if len(chunks) != len(embeddings) or len(chunks) != </p>
+<p class="calibre1">len(metadata_list):</p>
+<p class="calibre1">raise ValueError("Chunks, embeddings, and metadata must have the same length")</p>
+<p class="calibre1"/>
+<p class="calibre1">index = self._get_faiss_index()</p>
+<p class="calibre1">conn = self._get_connection()</p>
+<p class="calibre1">cursor = conn.cursor()</p>
+<p class="calibre1"/>
+<p class="calibre1">chunk_ids = []</p>
+<p class="calibre1">start_id = index.ntotal</p>
+<p class="calibre1"/>
+<p class="calibre1">for i, (chunk, embedding, metadata) in enumerate(zip(chunks, embeddings, metadata_list)):</p>
+<p class="calibre1"># Generate chunk ID</p>
+<p class="calibre1">chunk_id = self._generate_chunk_id(chunk, metadata)</p>
+<p class="calibre1"/>
+<p class="calibre1"># Check if chunk already exists (idempotent) cursor.execute("SELECT id FROM chunks WHERE id = ?", (chunk_id,))</p>
+<p class="calibre1">if cursor.fetchone():</p>
+<p class="calibre1">logger.debug(f"Chunk {chunk_id} already exists, skipping")</p>
+<p class="calibre1">continue</p>
+<p class="calibre1"/>
+<p class="calibre1"># Add to FAISS</p>
+<p class="calibre1">embedding_np = embedding.astype(np.float32).reshape(1, -1) index.add(embedding_np)</p>
+<p class="calibre1">embedding_id = start_id + i</p>
+<p class="calibre1"/>
+<p class="calibre1"># Add to SQLite</p>
+<p class="calibre1">metadata_json = json.dumps(metadata)</p>
+<p class="calibre1">cursor.execute(""" </p>
+<p class="calibre1">INSERT INTO chunks (id, text, metadata, embedding_id, doc_id)</p>
+<p class="calibre1">VALUES (?, ?, ?, ?, ?)</p>
+<p class="calibre1">""", (chunk_id, chunk, metadata_json, embedding_id, doc_id)) chunk_ids.append(chunk_id)</p>
+<p class="calibre1"/>
+<p class="calibre1"><a id="p9"></a>        conn.commit()</p>
+<p class="calibre1">conn.close()</p>
+<p class="calibre1"/>
+<p class="calibre1">self._save_faiss_index()</p>
+<p class="calibre1"/>
+<p class="calibre1">logger.info(f"Added {len(chunk_ids)} chunks to vector store") return chunk_ids</p>
+<p class="calibre1"/>
+<p class="calibre1">def search(</p>
+<p class="calibre1">self, </p>
+<p class="calibre1">query_embedding: np.ndarray, </p>
+<p class="calibre1">k: int = 5, </p>
+<p class="calibre1">filter_metadata: Optional[Dict[str, Any]] = None</p>
+<p class="calibre1">) -&gt; List[Dict[str, Any]]:</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">Search for similar chunks</p>
+<p class="calibre1"/>
+<p class="calibre1">Args:</p>
+<p class="calibre1">query_embedding: Query embedding</p>
+<p class="calibre1">k: Number of results to return</p>
+<p class="calibre1">filter_metadata: Optional metadata filter Returns:</p>
+<p class="calibre1">List of search results with text, metadata, and scores</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">index = self._get_faiss_index()</p>
+<p class="calibre1"/>
+<p class="calibre1">if index.ntotal == 0:</p>
+<p class="calibre1">return []</p>
+<p class="calibre1"/>
+<p class="calibre1"># Search FAISS</p>
+<p class="calibre1">query_np = query_embedding.astype(np.float32).reshape(1, -1) distances, indices = index.search(query_np, k)</p>
+<p class="calibre1"/>
+<p class="calibre1"># Get results from SQLite</p>
+<p class="calibre1">conn = self._get_connection()</p>
+<p class="calibre1">cursor = conn.cursor()</p>
+<p class="calibre1"/>
+<p class="calibre1">results = []</p>
+<p class="calibre1">for dist, idx in zip(distances[0], indices[0]): if idx == -1:</p>
+<p class="calibre1"><a id="p10"></a>                continue</p>
+<p class="calibre1"/>
+<p class="calibre1">cursor.execute(""" </p>
+<p class="calibre1">SELECT id, text, metadata, doc_id</p>
+<p class="calibre1">FROM chunks</p>
+<p class="calibre1">WHERE embedding_id = ? </p>
+<p class="calibre1">""", (int(idx),))</p>
+<p class="calibre1"/>
+<p class="calibre1">row = cursor.fetchone()</p>
+<p class="calibre1">if row is None:</p>
+<p class="calibre1">continue</p>
+<p class="calibre1"/>
+<p class="calibre1">chunk_id, text, metadata_json, doc_id = row metadata = json.loads(metadata_json)</p>
+<p class="calibre1"/>
+<p class="calibre1"># Apply metadata filter</p>
+<p class="calibre1">if filter_metadata:</p>
+<p class="calibre1">matches = all(metadata.get(k) == v for k, v in filter_metadata.items())</p>
+<p class="calibre1">if not matches:</p>
+<p class="calibre1">continue</p>
+<p class="calibre1"/>
+<p class="calibre1">results.append({</p>
+<p class="calibre1">"id": chunk_id, </p>
+<p class="calibre1">"text": text, </p>
+<p class="calibre1">"metadata": metadata, </p>
+<p class="calibre1">"doc_id": doc_id, </p>
+<p class="calibre1">"score": float(1.0 - dist)  # Convert L2 distance to similarity</p>
+<p class="calibre1">})</p>
+<p class="calibre1"/>
+<p class="calibre1">conn.close()</p>
+<p class="calibre1"/>
+<p class="calibre1"># Sort by score (descending)</p>
+<p class="calibre1">results.sort(key=lambda x: x["score"], reverse=True) return results[:k]</p>
+<p class="calibre1"/>
+<p class="calibre1">def count(self) -&gt; int:</p>
+<p class="calibre1">"""Get total number of chunks""" </p>
+<p class="calibre1">index = self._get_faiss_index()</p>
+<p class="calibre1"><a id="p11"></a>        return index.ntotal def delete_document(self, doc_id: str):</p>
+<p class="calibre1">"""Delete all chunks belonging to a document""" </p>
+<p class="calibre1"># This is a simplified implementation</p>
+<p class="calibre1"># FAISS doesn't support deletion directly, so we rebuild logger.warning(f"Deleting document {doc_id} requires rebuilding the index")</p>
+<p class="calibre1"/>
+<p class="calibre1">conn = self._get_connection()</p>
+<p class="calibre1">cursor = conn.cursor()</p>
+<p class="calibre1"/>
+<p class="calibre1"># Get embedding IDs to delete</p>
+<p class="calibre1">cursor.execute("SELECT embedding_id FROM chunks WHERE doc_id = </p>
+<p class="calibre1">?", (doc_id,))</p>
+<p class="calibre1">embedding_ids = [row[0] for row in cursor.fetchall()]</p>
+<p class="calibre1"/>
+<p class="calibre1">if not embedding_ids:</p>
+<p class="calibre1">conn.close()</p>
+<p class="calibre1">return</p>
+<p class="calibre1"/>
+<p class="calibre1"># Delete from SQLite</p>
+<p class="calibre1">cursor.execute("DELETE FROM chunks WHERE doc_id = ?", (doc_id,)) conn.commit()</p>
+<p class="calibre1">conn.close()</p>
+<p class="calibre1"/>
+<p class="calibre1"># Rebuild FAISS index</p>
+<p class="calibre1">self._rebuild_index()</p>
+<p class="calibre1"/>
+<p class="calibre1">logger.info(f"Deleted document {doc_id} with </p>
+<p class="calibre1">{len(embedding_ids)} chunks")</p>
+<p class="calibre1"/>
+<p class="calibre1">def _rebuild_index(self):</p>
+<p class="calibre1">"""Rebuild FAISS index from SQLite data""" </p>
+<p class="calibre1">conn = self._get_connection()</p>
+<p class="calibre1">cursor = conn.cursor()</p>
+<p class="calibre1"/>
+<p class="calibre1">cursor.execute("SELECT embedding_id, text, metadata FROM chunks ORDER BY embedding_id")</p>
+<p class="calibre1">rows = cursor.fetchall()</p>
+<p class="calibre1"/>
+<p class="calibre1"><a id="p12"></a>        if not rows:</p>
+<p class="calibre1">self.index = faiss.IndexFlatL2(self.dimension) self._save_faiss_index()</p>
+<p class="calibre1">conn.close()</p>
+<p class="calibre1">return</p>
+<p class="calibre1"/>
+<p class="calibre1"># Get all embeddings by reconstructing from IDs</p>
+<p class="calibre1"># For simplicity, we'll just recreate the index</p>
+<p class="calibre1"># In production, you'd need to store embeddings properly self.index = faiss.IndexFlatL2(self.dimension)</p>
+<p class="calibre1"/>
+<p class="calibre1"># Add back all chunks</p>
+<p class="calibre1">for i, row in enumerate(rows):</p>
+<p class="calibre1"># We need the original embedding, but we don't store it</p>
+<p class="calibre1"># This is a placeholder - in practice you'd store embeddings pass</p>
+<p class="calibre1"/>
+<p class="calibre1">conn.close()</p>
+<p class="calibre1">self._save_faiss_index()</p>
+<p class="calibre1"><b class="calibre2">3.4 Ingestion ( src/ingestion.py )</b></p>
+<p class="calibre1">python</p>
+<p class="calibre1">import os</p>
+<p class="calibre1">from typing import List, Dict, Any, Optional from pathlib import Path</p>
+<p class="calibre1">import hashlib</p>
+<p class="calibre1">import logging</p>
+<p class="calibre1">from langchain.document_loaders import PyPDFLoader, UnstructuredHTMLLoader, TextLoader</p>
+<p class="calibre1">from langchain.text_splitter import RecursiveCharacterTextSplitter logger = logging.getLogger(__name__)</p>
+<p class="calibre1">class DocumentIngester:</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">Ingests documents and prepares them for vector storage</p>
+<p class="calibre1">""" </p>
+<p class="calibre1"/>
+<p class="calibre1">def __init__(</p>
+<p class="calibre1"><a id="p13"></a>        self, </p>
+<p class="calibre1">chunk_size: int = 512, </p>
+<p class="calibre1">chunk_overlap: int = 50, </p>
+<p class="calibre1">vector_store = None, </p>
+<p class="calibre1">embedding_generator = None</p>
+<p class="calibre1">):</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">Initialize the document ingester</p>
+<p class="calibre1"/>
+<p class="calibre1">Args:</p>
+<p class="calibre1">chunk_size: Size of text chunks</p>
+<p class="calibre1">chunk_overlap: Overlap between chunks</p>
+<p class="calibre1">vector_store: Vector store instance</p>
+<p class="calibre1">embedding_generator: Embedding generator instance</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">self.chunk_size = chunk_size</p>
+<p class="calibre1">self.chunk_overlap = chunk_overlap</p>
+<p class="calibre1">self.vector_store = vector_store</p>
+<p class="calibre1">self.embedding_generator = embedding_generator self.text_splitter = RecursiveCharacterTextSplitter(</p>
+<p class="calibre1">chunk_size=chunk_size, </p>
+<p class="calibre1">chunk_overlap=chunk_overlap, </p>
+<p class="calibre1">separators=["\n\n", "\n", ".", " ", ""], length_function=len</p>
+<p class="calibre1">)</p>
+<p class="calibre1"/>
+<p class="calibre1">self.processed_docs = set()</p>
+<p class="calibre1"/>
+<p class="calibre1">def ingest_file(self, file_path: str, metadata: Optional[Dict[str, Any]] = None) -&gt; int:</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">Ingest a single file</p>
+<p class="calibre1"/>
+<p class="calibre1">Args:</p>
+<p class="calibre1">file_path: Path to the file</p>
+<p class="calibre1">metadata: Additional metadata</p>
+<p class="calibre1"/>
+<p class="calibre1">Returns:</p>
+<p class="calibre1">Number of chunks ingested</p>
+<p class="calibre1">""" </p>
+<p class="calibre1"><a id="p14"></a>        file_path = Path(file_path) if not file_path.exists():</p>
+<p class="calibre1">raise FileNotFoundError(f"File not found: {file_path}")</p>
+<p class="calibre1"/>
+<p class="calibre1"># Load document</p>
+<p class="calibre1">docs = self._load_document(file_path)</p>
+<p class="calibre1"/>
+<p class="calibre1">if not docs:</p>
+<p class="calibre1">logger.warning(f"No content extracted from {file_path}") return 0</p>
+<p class="calibre1"/>
+<p class="calibre1"># Generate document ID</p>
+<p class="calibre1">doc_id = self._generate_doc_id(file_path)</p>
+<p class="calibre1"/>
+<p class="calibre1"># Chunk documents</p>
+<p class="calibre1">chunks = []</p>
+<p class="calibre1">for doc in docs:</p>
+<p class="calibre1">doc_chunks = self.text_splitter.split_text(doc.page_content) chunks.extend(doc_chunks)</p>
+<p class="calibre1"/>
+<p class="calibre1">if not chunks:</p>
+<p class="calibre1">logger.warning(f"No chunks generated from {file_path}") return 0</p>
+<p class="calibre1"/>
+<p class="calibre1"># Prepare metadata</p>
+<p class="calibre1">base_metadata = {</p>
+<p class="calibre1">"source": str(file_path), </p>
+<p class="calibre1">"filename": file_path.name, </p>
+<p class="calibre1">"doc_type": file_path.suffix[1:], </p>
+<p class="calibre1">"doc_id": doc_id</p>
+<p class="calibre1">}</p>
+<p class="calibre1">if metadata:</p>
+<p class="calibre1">base_metadata.update(metadata)</p>
+<p class="calibre1"/>
+<p class="calibre1"># Generate embeddings</p>
+<p class="calibre1">embeddings = self.embedding_generator.embed(chunks)</p>
+<p class="calibre1"/>
+<p class="calibre1"># Add to vector store</p>
+<p class="calibre1">metadata_list = [{**base_metadata, "chunk_index": i} for i in range(len(chunks))]</p>
+<p class="calibre1"><a id="p15"></a>        chunk_ids = self.vector_store.add_chunks(</p>
+<p class="calibre1">chunks=chunks, </p>
+<p class="calibre1">embeddings=embeddings, </p>
+<p class="calibre1">metadata_list=metadata_list, </p>
+<p class="calibre1">doc_id=doc_id</p>
+<p class="calibre1">)</p>
+<p class="calibre1"/>
+<p class="calibre1">self.processed_docs.add(doc_id)</p>
+<p class="calibre1"/>
+<p class="calibre1">logger.info(f"Ingested {len(chunk_ids)} chunks from </p>
+<p class="calibre1">{file_path}")</p>
+<p class="calibre1">return len(chunk_ids)</p>
+<p class="calibre1"/>
+<p class="calibre1">def ingest_directory(self, directory_path: str, metadata: Optional[Dict[str, Any]] = None) -&gt; int:</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">Ingest all supported files in a directory Args:</p>
+<p class="calibre1">directory_path: Path to the directory</p>
+<p class="calibre1">metadata: Additional metadata</p>
+<p class="calibre1"/>
+<p class="calibre1">Returns:</p>
+<p class="calibre1">Total number of chunks ingested</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">directory_path = Path(directory_path)</p>
+<p class="calibre1"/>
+<p class="calibre1">if not directory_path.exists() or not directory_path.is_dir(): raise ValueError(f"Directory not found: {directory_path}") total_chunks = 0</p>
+<p class="calibre1">supported_extensions = [".pdf", ".html", ".htm", ".md", ".txt"]</p>
+<p class="calibre1"/>
+<p class="calibre1">for file_path in directory_path.rglob("*"): if file_path.suffix.lower() in supported_extensions: try:</p>
+<p class="calibre1">chunks = self.ingest_file(str(file_path), metadata) total_chunks += chunks</p>
+<p class="calibre1">except Exception as e:</p>
+<p class="calibre1">logger.error(f"Error ingesting {file_path}: {e}")</p>
+<p class="calibre1"/>
+<p class="calibre1"><a id="p16"></a>        return total_chunks def _load_document(self, file_path: Path) -&gt; List:</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">Load a document based on its extension</p>
+<p class="calibre1"/>
+<p class="calibre1">Args:</p>
+<p class="calibre1">file_path: Path to the file</p>
+<p class="calibre1"/>
+<p class="calibre1">Returns:</p>
+<p class="calibre1">List of document objects</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">suffix = file_path.suffix.lower()</p>
+<p class="calibre1"/>
+<p class="calibre1">try:</p>
+<p class="calibre1">if suffix == ".pdf":</p>
+<p class="calibre1">loader = PyPDFLoader(str(file_path))</p>
+<p class="calibre1">return loader.load()</p>
+<p class="calibre1">elif suffix in [".html", ".htm"]: loader = UnstructuredHTMLLoader(str(file_path)) return loader.load()</p>
+<p class="calibre1">elif suffix in [".md", ".txt"]: loader = TextLoader(str(file_path))</p>
+<p class="calibre1">return loader.load()</p>
+<p class="calibre1">else:</p>
+<p class="calibre1">logger.warning(f"Unsupported file type: {suffix}") return []</p>
+<p class="calibre1">except Exception as e:</p>
+<p class="calibre1">logger.error(f"Error loading {file_path}: {e}") return []</p>
+<p class="calibre1"/>
+<p class="calibre1">def _generate_doc_id(self, file_path: Path) -&gt; str:</p>
+<p class="calibre1">"""Generate a unique document ID""" </p>
+<p class="calibre1">content = str(file_path.absolute()) + </p>
+<p class="calibre1">str(file_path.stat().st_mtime)</p>
+<p class="calibre1">return hashlib.sha256(content.encode()).hexdigest()[:16]</p>
+<p class="calibre1"/>
+<p class="calibre1">def get_processed_docs(self) -&gt; List[str]:</p>
+<p class="calibre1">"""Get list of processed document IDs""" </p>
+<p class="calibre1">return list(self.processed_docs)</p>
+<p class="calibre1"><a id="p17"></a><b class="calibre2">3.5 Retrieval ( src/retrieval.py )</b> python</p>
+<p class="calibre1">from typing import List, Dict, Any, Optional import logging</p>
+<p class="calibre1">logger = logging.getLogger(__name__)</p>
+<p class="calibre1">class Retriever:</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">Retrieves relevant chunks from the vector store</p>
+<p class="calibre1">""" </p>
+<p class="calibre1"/>
+<p class="calibre1">def __init__(self, vector_store, embedding_generator, k: int = 5):</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">Initialize the retriever</p>
+<p class="calibre1"/>
+<p class="calibre1">Args:</p>
+<p class="calibre1">vector_store: Vector store instance</p>
+<p class="calibre1">embedding_generator: Embedding generator instance k: Default number of results to retrieve</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">self.vector_store = vector_store</p>
+<p class="calibre1">self.embedding_generator = embedding_generator self.k = k</p>
+<p class="calibre1"/>
+<p class="calibre1">def retrieve(</p>
+<p class="calibre1">self, </p>
+<p class="calibre1">query: str, </p>
+<p class="calibre1">k: Optional[int] = None, </p>
+<p class="calibre1">filter_metadata: Optional[Dict[str, Any]] = None</p>
+<p class="calibre1">) -&gt; List[Dict[str, Any]]:</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">Retrieve relevant chunks for a query</p>
+<p class="calibre1"/>
+<p class="calibre1">Args:</p>
+<p class="calibre1">query: Query string</p>
+<p class="calibre1">k: Number of results to retrieve</p>
+<p class="calibre1">filter_metadata: Optional metadata filter</p>
+<p class="calibre1"/>
+<p class="calibre1"><a id="p18"></a>        Returns:</p>
+<p class="calibre1">List of retrieved chunks with scores</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">if k is None:</p>
+<p class="calibre1">k = self.k</p>
+<p class="calibre1"/>
+<p class="calibre1"># Generate query embedding</p>
+<p class="calibre1">query_embedding = self.embedding_generator.embed_single(query)</p>
+<p class="calibre1"/>
+<p class="calibre1"># Search vector store</p>
+<p class="calibre1">results = self.vector_store.search(</p>
+<p class="calibre1">query_embedding=query_embedding, </p>
+<p class="calibre1">k=k, </p>
+<p class="calibre1">filter_metadata=filter_metadata</p>
+<p class="calibre1">)</p>
+<p class="calibre1"/>
+<p class="calibre1">logger.info(f"Retrieved {len(results)} chunks for query: </p>
+<p class="calibre1">{query[:50]}...")</p>
+<p class="calibre1"/>
+<p class="calibre1">return results</p>
+<p class="calibre1"/>
+<p class="calibre1">def format_context(self, results: List[Dict[str, Any]]) -&gt; str:</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">Format retrieved chunks as context for LLM</p>
+<p class="calibre1"/>
+<p class="calibre1">Args:</p>
+<p class="calibre1">results: List of retrieved chunks</p>
+<p class="calibre1"/>
+<p class="calibre1">Returns:</p>
+<p class="calibre1">Formatted context string</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">if not results:</p>
+<p class="calibre1">return "No relevant context found." </p>
+<p class="calibre1"/>
+<p class="calibre1">context_parts = []</p>
+<p class="calibre1">for i, result in enumerate(results, 1):</p>
+<p class="calibre1">source = result.get("metadata", {}).get("source", "Unknown source")</p>
+<p class="calibre1">context_parts.append(f"[{i}] Source: </p>
+<p class="calibre1">{source}\n{result['text']}\n")</p>
+<p class="calibre1"><a id="p19"></a>        </p>
+<p class="calibre1">return "\n".join(context_parts) <b class="calibre2">3.6 RAG Pipeline ( src/rag.py )</b></p>
+<p class="calibre1">python</p>
+<p class="calibre1">import time</p>
+<p class="calibre1">import logging</p>
+<p class="calibre1">from typing import Dict, Any, Optional, List from openai import OpenAI</p>
+<p class="calibre1">import tiktoken</p>
+<p class="calibre1">logger = logging.getLogger(__name__)</p>
+<p class="calibre1">class RAGPipeline:</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">RAG pipeline with LLM integration</p>
+<p class="calibre1">""" </p>
+<p class="calibre1"/>
+<p class="calibre1">def __init__(</p>
+<p class="calibre1">self, </p>
+<p class="calibre1">retriever, </p>
+<p class="calibre1">llm_model: str = "gpt-3.5-turbo", openai_api_key: Optional[str] = None, </p>
+<p class="calibre1">max_tokens: int = 500</p>
+<p class="calibre1">):</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">Initialize the RAG pipeline</p>
+<p class="calibre1"/>
+<p class="calibre1">Args:</p>
+<p class="calibre1">retriever: Retriever instance</p>
+<p class="calibre1">llm_model: LLM model to use</p>
+<p class="calibre1">openai_api_key: OpenAI API key</p>
+<p class="calibre1">max_tokens: Maximum tokens in response</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">self.retriever = retriever</p>
+<p class="calibre1">self.llm_model = llm_model</p>
+<p class="calibre1">self.max_tokens = max_tokens</p>
+<p class="calibre1">self.openai_client = None</p>
+<p class="calibre1"/>
+<p class="calibre1"><a id="p20"></a>        if openai_api_key: self.openai_client = OpenAI(api_key=openai_api_key) else:</p>
+<p class="calibre1">logger.warning("OpenAI API key not provided. LLM features disabled.")</p>
+<p class="calibre1"/>
+<p class="calibre1">self.token_encoder = tiktoken.encoding_for_model("gpt-3.5-turbo")</p>
+<p class="calibre1"/>
+<p class="calibre1">def answer(</p>
+<p class="calibre1">self, </p>
+<p class="calibre1">query: str, </p>
+<p class="calibre1">k: Optional[int] = None, </p>
+<p class="calibre1">filter_metadata: Optional[Dict[str, Any]] = None</p>
+<p class="calibre1">) -&gt; Dict[str, Any]:</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">Answer a query using RAG</p>
+<p class="calibre1"/>
+<p class="calibre1">Args:</p>
+<p class="calibre1">query: User query</p>
+<p class="calibre1">k: Number of chunks to retrieve</p>
+<p class="calibre1">filter_metadata: Optional metadata filter Returns:</p>
+<p class="calibre1">Dictionary with answer and metadata</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">start_time = time.time()</p>
+<p class="calibre1"/>
+<p class="calibre1"># Retrieve relevant chunks</p>
+<p class="calibre1">retrieval_start = time.time()</p>
+<p class="calibre1">chunks = self.retriever.retrieve(query, k=k, filter_metadata=filter_metadata)</p>
+<p class="calibre1">retrieval_time = time.time() - retrieval_start</p>
+<p class="calibre1"/>
+<p class="calibre1"># Format context</p>
+<p class="calibre1">context = self.retriever.format_context(chunks)</p>
+<p class="calibre1"/>
+<p class="calibre1"># Generate answer</p>
+<p class="calibre1">answer_start = time.time()</p>
+<p class="calibre1">answer, tokens_used = self._generate_answer(query, context, chunks)</p>
+<p class="calibre1"><a id="p21"></a>        answer_time = time.time() - answer_start total_time = time.time() - start_time</p>
+<p class="calibre1"/>
+<p class="calibre1"># Log metrics</p>
+<p class="calibre1">logger.info(f"Query: {query[:50]}...") logger.info(f"Retrieved {len(chunks)} chunks in </p>
+<p class="calibre1">{retrieval_time*1000:.2f}ms")</p>
+<p class="calibre1">logger.info(f"Answer generated in {answer_time*1000:.2f}ms") logger.info(f"Total time: {total_time*1000:.2f}ms") logger.info(f"Tokens used: {tokens_used}") return {</p>
+<p class="calibre1">"query": query, </p>
+<p class="calibre1">"answer": answer, </p>
+<p class="calibre1">"context": context, </p>
+<p class="calibre1">"chunks": chunks, </p>
+<p class="calibre1">"metrics": {</p>
+<p class="calibre1">"retrieval_time_ms": retrieval_time * 1000, </p>
+<p class="calibre1">"answer_time_ms": answer_time * 1000, </p>
+<p class="calibre1">"total_time_ms": total_time * 1000, </p>
+<p class="calibre1">"chunk_count": len(chunks), </p>
+<p class="calibre1">"tokens_used": tokens_used</p>
+<p class="calibre1">}</p>
+<p class="calibre1">}</p>
+<p class="calibre1"/>
+<p class="calibre1">def _generate_answer(</p>
+<p class="calibre1">self, </p>
+<p class="calibre1">query: str, </p>
+<p class="calibre1">context: str, </p>
+<p class="calibre1">chunks: List[Dict[str, Any]]</p>
+<p class="calibre1">) -&gt; tuple[str, int]:</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">Generate an answer using the LLM</p>
+<p class="calibre1"/>
+<p class="calibre1">Args:</p>
+<p class="calibre1">query: User query</p>
+<p class="calibre1">context: Formatted context</p>
+<p class="calibre1">chunks: Retrieved chunks</p>
+<p class="calibre1"/>
+<p class="calibre1">Returns:</p>
+<p class="calibre1"><a id="p22"></a>            Tuple of (answer, tokens_used)</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">if not self.openai_client:</p>
+<p class="calibre1">return self._generate_fallback_answer(query, context), 0</p>
+<p class="calibre1"/>
+<p class="calibre1">if not chunks:</p>
+<p class="calibre1">return self._handle_no_context(query), 0</p>
+<p class="calibre1"/>
+<p class="calibre1"># Construct prompt</p>
+<p class="calibre1">prompt = f"""You are a helpful assistant that answers questions based on the provided context. </p>
+<p class="calibre1">Context:</p>
+<p class="calibre1">{context}</p>
+<p class="calibre1">Question: {query}</p>
+<p class="calibre1">Instructions:</p>
+<p class="calibre1">1. Answer based ONLY on the context provided. </p>
+<p class="calibre1">2. If the context doesn't contain the answer, say "I don't have enough information to answer this question." </p>
+<p class="calibre1">3. Cite the sources you use (e.g., [1], [2]). </p>
+<p class="calibre1">4. Be concise but thorough. </p>
+<p class="calibre1">Answer:""" </p>
+<p class="calibre1">try:</p>
+<p class="calibre1">response = self.openai_client.chat.completions.create(</p>
+<p class="calibre1">model=self.llm_model, </p>
+<p class="calibre1">messages=[</p>
+<p class="calibre1">{"role": "system", "content": "You are a helpful assistant that answers questions based on provided context."}, </p>
+<p class="calibre1">{"role": "user", "content": prompt}</p>
+<p class="calibre1">], </p>
+<p class="calibre1">max_tokens=self.max_tokens, </p>
+<p class="calibre1">temperature=0.1</p>
+<p class="calibre1">)</p>
+<p class="calibre1"/>
+<p class="calibre1">answer = response.choices[0].message.content tokens_used = response.usage.total_tokens</p>
+<p class="calibre1"/>
+<p class="calibre1"><a id="p23"></a>            return answer, tokens_used except Exception as e:</p>
+<p class="calibre1">logger.error(f"Error generating answer: {e}") return self._generate_fallback_answer(query, context), 0</p>
+<p class="calibre1"/>
+<p class="calibre1">def _handle_no_context(self, query: str) -&gt; str:</p>
+<p class="calibre1">"""Handle case with no relevant context""" </p>
+<p class="calibre1">return "I don't have enough information to answer this question. </p>
+<p class="calibre1">The document corpus doesn't contain relevant context." </p>
+<p class="calibre1"/>
+<p class="calibre1">def _generate_fallback_answer(self, query: str, context: str) -&gt; str:</p>
+<p class="calibre1">"""Generate a fallback answer without LLM""" </p>
+<p class="calibre1">if not context or "No relevant context" in context: return "I don't have enough information to answer this question." </p>
+<p class="calibre1"/>
+<p class="calibre1">return "Based on the provided context, I can answer this question. (LLM API key not configured)" </p>
+<p class="calibre1"><b class="calibre2">3.7 Evaluation ( src/evaluation.py )</b></p>
+<p class="calibre1">python</p>
+<p class="calibre1">import json</p>
+<p class="calibre1">import numpy as np</p>
+<p class="calibre1">from typing import List, Dict, Any, Tuple from sklearn.metrics.pairwise import cosine_similarity import logging</p>
+<p class="calibre1">logger = logging.getLogger(__name__)</p>
+<p class="calibre1">class Evaluator:</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">Evaluate RAG system performance</p>
+<p class="calibre1">""" </p>
+<p class="calibre1"/>
+<p class="calibre1">def __init__(self, rag_pipeline, embedding_generator):</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">Initialize the evaluator</p>
+<p class="calibre1"><a id="p24"></a>        </p>
+<p class="calibre1">Args:</p>
+<p class="calibre1">rag_pipeline: RAG pipeline instance</p>
+<p class="calibre1">embedding_generator: Embedding generator instance</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">self.rag_pipeline = rag_pipeline</p>
+<p class="calibre1">self.embedding_generator = embedding_generator self.results = []</p>
+<p class="calibre1"/>
+<p class="calibre1">def evaluate_questions(self, questions: List[Dict[str, Any]]) -&gt; Dict[str, Any]:</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">Evaluate the RAG system on a set of questions Args:</p>
+<p class="calibre1">questions: List of question dictionaries with keys:</p>
+<p class="calibre1">- question: The question text</p>
+<p class="calibre1">- gold_answer: Optional gold answer</p>
+<p class="calibre1">- relevant_chunks: Optional list of relevant chunk IDs</p>
+<p class="calibre1">- category: Optional category</p>
+<p class="calibre1"/>
+<p class="calibre1">Returns:</p>
+<p class="calibre1">Evaluation metrics</p>
+<p class="calibre1">""" </p>
+<p class="calibre1">metrics = {</p>
+<p class="calibre1">"retrieval": [], </p>
+<p class="calibre1">"answer": [], </p>
+<p class="calibre1">"latency": []</p>
+<p class="calibre1">}</p>
+<p class="calibre1"/>
+<p class="calibre1">for q in questions:</p>
+<p class="calibre1">question_text = q["question"]</p>
+<p class="calibre1"/>
+<p class="calibre1"># Get RAG response</p>
+<p class="calibre1">response = self.rag_pipeline.answer(question_text)</p>
+<p class="calibre1"/>
+<p class="calibre1"># Store results</p>
+<p class="calibre1">result = {</p>
+<p class="calibre1">"question": question_text, </p>
+<p class="calibre1">"answer": response["answer"], </p>
+<p class="calibre1"><a id="p25"></a>                "chunks": response["chunks"], </p>
+<p class="calibre1">"metrics": response["metrics"], </p>
+<p class="calibre1">"gold_answer": q.get("gold_answer", ""), </p>
+<p class="calibre1">"relevant_chunks": q.get("relevant_chunks", []), </p>
+<p class="calibre1">"category": q.get("category", "general")</p>
+<p class="calibre1">}</p>
+<p class="calibre1">self.results.append(result)</p>
+<p class="calibre1"/>
+<p class="calibre1"># Compute retrieval metrics if relevant chunks are known if q.get("relevant_chunks"):</p>
+<p class="calibre1">retrieval_metrics = self._compute_retrieval_metrics(</p>
+<p class="calibre1">retrieved_chunks=response["chunks"], relevant_chunk_ids=q["relevant_chunks"]</p>
+<p class="calibre1">)</p>
+<p class="calibre1">metrics["retrieval"].append(retrieval_metrics)</p>
+<p class="calibre1"/>
+<p class="calibre1"># Compute answer metrics</p>
+<p class="calibre1">if q.get("gold_answer"):</p>
+<p class="calibre1">answer_metrics = self._compute_answer_metrics(</p>
+<p class="calibre1">generated=response["answer"], </p>
+<p class="calibre1">gold=q["gold_answer"], </p>
+<p class="calibre1">context=response["context"]</p>
+<p class="calibre1">)</p>
+<p class="calibre1">metrics["answer"].append(answer_metrics)</p>
+<p class="calibre1"/>
+<p class="calibre1"># Latency metrics</p>
+<p class="calibre1">metrics["latency"].append({</p>
+<p class="calibre1">"total_time_ms": response["metrics"]["total_time_ms"], </p>
+<p class="calibre1">"retrieval_time_ms": response["metrics"]</p>
+<p class="calibre1">["retrieval_time_ms"], </p>
+<p class="calibre1">"answer_time_ms": response["metrics"]["answer_time_ms"], </p>
+<p class="calibre1">"chunk_count": response["metrics"]["chunk_count"]</p>
+<p class="calibre1">})</p>
+<p class="calibre1"/>
+<p class="calibre1"># Aggregate metrics</p>
+<p class="calibre1">return self._aggregate_metrics(metrics)</p>
+<p class="calibre1"/>
+<p class="calibre1">def _compute_retrieval_metrics(</p>
+<p class="calibre1">self, </p>
+<p class="calibre1">retrieved_chunks: List[Dict[str, Any]], </p>
+<p class="calibre1">relevant_chunk_ids: List[str]</p>
+<p class="calibre1"><a id="p26"></a>    ) -&gt; Dict[str, float]:</p>
+<p class="calibre1">"""Compute retrieval metrics""" </p>
+<p class="calibre1"># Get retrieved IDs</p>
+<p class="calibre1">retrieved_ids = [c["id"] for c in retrieved_chunks]</p>
+<p class="calibre1"/>
+<p class="calibre1"># Hit rate (recall@k)</p>
+<p class="calibre1">hits = sum(1 for rid in retrieved_ids if rid in relevant_chunk_ids)</p>
+<p class="calibre1">hit_rate = hits / min(len(relevant_chunk_ids), len(retrieved_ids)) if relevant_chunk_ids else 0</p>
+<p class="calibre1"/>
+<p class="calibre1"># Precision@k</p>
+<p class="calibre1">precision = hits / len(retrieved_ids) if retrieved_ids else 0</p>
+<p class="calibre1"/>
+<p class="calibre1"># MRR (Mean Reciprocal Rank)</p>
+<p class="calibre1">mrr = 0</p>
+<p class="calibre1">for i, rid in enumerate(retrieved_ids, 1): if rid in relevant_chunk_ids:</p>
+<p class="calibre1">mrr = 1 / i</p>
+<p class="calibre1">break</p>
+<p class="calibre1"/>
+<p class="calibre1"># nDCG@k (simplified)</p>
+<p class="calibre1">ndcg = 0</p>
+<p class="calibre1">relevance = [1 if rid in relevant_chunk_ids else 0 for rid in retrieved_ids]</p>
+<p class="calibre1">if relevance:</p>
+<p class="calibre1">dcg = sum(rel / np.log2(i + 2) for i, rel in enumerate(relevance))</p>
+<p class="calibre1">idcg = sum(1 / np.log2(i + 2) for i in </p>
+<p class="calibre1">range(min(len(relevant_chunk_ids), len(retrieved_ids)))) ndcg = dcg / idcg if idcg &gt; 0 else 0</p>
+<p class="calibre1"/>
+<p class="calibre1">return {</p>
+<p class="calibre1">"hit_rate": hit_rate, </p>
+<p class="calibre1">"precision": precision, </p>
+<p class="calibre1">"mrr": mrr, </p>
+<p class="calibre1">"ndcg": ndcg</p>
+<p class="calibre1">}</p>
+<p class="calibre1"/>
+<p class="calibre1">def _compute_answer_metrics(</p>
+<p class="calibre1">self, </p>
+<p class="calibre1"><a id="p27"></a>        generated: str, </p>
+<p class="calibre1">gold: str, </p>
+<p class="calibre1">context: str</p>
+<p class="calibre1">) -&gt; Dict[str, float]:</p>
+<p class="calibre1">"""Compute answer quality metrics""" </p>
+<p class="calibre1"># Token overlap (simplified EM/F1)</p>
+<p class="calibre1">gold_tokens = set(gold.lower().split())</p>
+<p class="calibre1">gen_tokens = set(generated.lower().split())</p>
+<p class="calibre1"/>
+<p class="calibre1"># Exact Match</p>
+<p class="calibre1">em = 1.0 if generated.strip() == gold.strip() else 0.0</p>
+<p class="calibre1"/>
+<p class="calibre1"># F1</p>
+<p class="calibre1">intersection = gold_tokens &amp; gen_tokens precision = len(intersection) / len(gen_tokens) if gen_tokens else 0</p>
+<p class="calibre1">recall = len(intersection) / len(gold_tokens) if gold_tokens else 0</p>
+<p class="calibre1">f1 = 2 * precision * recall / (precision + recall) if (precision </p>
+<p class="calibre1">+ recall) &gt; 0 else 0</p>
+<p class="calibre1"/>
+<p class="calibre1">return {</p>
+<p class="calibre1">"em": em, </p>
+<p class="calibre1">"f1": f1, </p>
+<p class="calibre1">"precision": precision, </p>
+<p class="calibre1">"recall": recall</p>
+<p class="calibre1">}</p>
+<p class="calibre1"/>
+<p class="calibre1">def _aggregate_metrics(self, metrics: Dict[str, List]) -&gt; Dict[str, Any]:</p>
+<p class="calibre1">"""Aggregate metrics across all questions""" </p>
+<p class="calibre1">aggregated = {</p>
+<p class="calibre1">"retrieval": {}, </p>
+<p class="calibre1">"answer": {}, </p>
+<p class="calibre1">"latency": {}, </p>
+<p class="calibre1">"summary": {}</p>
+<p class="calibre1">}</p>
+<p class="calibre1"/>
+<p class="calibre1"># Aggregation for retrieval metrics</p>
+<p class="calibre1">if metrics["retrieval"]:</p>
+<p class="calibre1">for key in metrics["retrieval"][0].keys():</p>
+<p class="calibre1"><a id="p28"></a>                values = [m[key] for m in metrics["retrieval"] if key in m]</p>
+<p class="calibre1">if values:</p>
+<p class="calibre1">aggregated["retrieval"][key] = {</p>
+<p class="calibre1">"mean": np.mean(values), </p>
+<p class="calibre1">"std": np.std(values), </p>
+<p class="calibre1">"min": np.min(values), </p>
+<p class="calibre1">"max": np.max(values)</p>
+<p class="calibre1">}</p>
+<p class="calibre1"/>
+<p class="calibre1"># Aggregation for answer metrics</p>
+<p class="calibre1">if metrics["answer"]:</p>
+<p class="calibre1">for key in metrics["answer"][0].keys(): values = [m[key] for m in metrics["answer"] if key in m]</p>
+<p class="calibre1">if values:</p>
+<p class="calibre1">aggregated["answer"][key] = {</p>
+<p class="calibre1">"mean": np.mean(values), </p>
+<p class="calibre1">"std": np.std(values), </p>
+<p class="calibre1">"min": np.min(values), </p>
+<p class="calibre1">"max": np.max(values)</p>
+<p class="calibre1">}</p>
+<p class="calibre1"/>
+<p class="calibre1"># Aggregation for latency metrics</p>
+<p class="calibre1">if metrics["latency"]:</p>
+<p class="calibre1">for key in metrics["latency"][0].keys(): values = [m[key] for m in metrics["latency"] if key in m]</p>
+<p class="calibre1">if values:</p>
+<p class="calibre1">aggregated["latency"][key] = {</p>
+<p class="calibre1">"mean": np.mean(values), </p>
+<p class="calibre1">"std": np.std(values), </p>
+<p class="calibre1">"min": np.min(values), </p>
+<p class="calibre1">"max": np.max(values), </p>
+<p class="calibre1">"p50": np.percentile(values, 50), </p>
+<p class="calibre1">"p95": np.percentile(values, 95)</p>
+<p class="calibre1">}</p>
+<p class="calibre1"/>
+<p class="calibre1"># Summary</p>
+<p class="calibre1">aggregated["summary"] = {</p>
+<p class="calibre1">"total_questions": len(metrics["latency"]), </p>
+<p class="calibre1">"avg_total_time_ms": np.mean([m["total_time_ms"] for m in </p>
+<p class="calibre1"><a id="p29"></a>metrics["latency"]]), </p>
+<p class="calibre1">"avg_chunk_count": np.mean([m["chunk_count"] for m in metrics["latency"]]), </p>
+<p class="calibre1">"avg_tokens_used": np.mean([m.get("tokens_used", 0) for m in metrics["latency"]])</p>
+<p class="calibre1">}</p>
+<p class="calibre1"/>
+<p class="calibre1">return aggregated</p>
+<p class="calibre1"/>
+<p class="calibre1">def save_results(self, output_path: str):</p>
+<p class="calibre1">"""Save evaluation results to file""" </p>
+<p class="calibre1">output = {</p>
+<p class="calibre1">"results": self.results, </p>
+<p class="calibre1">"aggregated": self._aggregate_metrics({})  # Placeholder</p>
+<p class="calibre1">}</p>
+<p class="calibre1"/>
+<p class="calibre1">with open(output_path, "w") as f: json.dump(output, f, indent=2)</p>
+<p class="calibre1"/>
+<p class="calibre1">logger.info(f"Results saved to {output_path}") <b class="calibre2">3.8 HTTP API ( src/app.py )</b></p>
+<p class="calibre1">python</p>
+<p class="calibre1">from flask import Flask, request, jsonify, render_template from flask_cors import CORS</p>
+<p class="calibre1">import logging</p>
+<p class="calibre1">from typing import Dict, Any</p>
+<p class="calibre1">import os</p>
+<p class="calibre1">from .config import config</p>
+<p class="calibre1">from .embeddings import EmbeddingGenerator from .vector_store import VectorStore</p>
+<p class="calibre1">from .retrieval import Retriever</p>
+<p class="calibre1">from .rag import RAGPipeline</p>
+<p class="calibre1">from .ingestion import DocumentIngester</p>
+<p class="calibre1">from .evaluation import Evaluator</p>
+<p class="calibre1"># Configure logging</p>
+<p class="calibre1">logging.basicConfig(</p>
+<p class="calibre1"><a id="p30"></a>    level=getattr(logging, config.LOG_LEVEL), format='%(asctime)s - %(name)s - %(levelname)s - %(message)s' </p>
+<p class="calibre1">)</p>
+<p class="calibre1">logger = logging.getLogger(__name__)</p>
+<p class="calibre1"># Initialize components</p>
+<p class="calibre1">embedding_generator</p>
+<p class="calibre1"/>
+
+
+
+  </div>
+
+  
+
+  <div class="calibreEbNav">
+    
+      <a href="../0ede407de6e2b6455f2d4fcb20d24fc6559f8586805027da1945757cc048a180.html" class="calibreAPrev">previous page
+</a>
+    
+
+    <a href="../0ede407de6e2b6455f2d4fcb20d24fc6559f8586805027da1945757cc048a180.html" class="calibreAHome">start
+</a>
+
+    
+  </div>
+
+</div>
+
+</body>
+</html>
